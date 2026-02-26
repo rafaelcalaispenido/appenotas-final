@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>eNotas - Acompanhamento de Emissões</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f0f0; color: #333; }
+.navbar { background: #fff; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; height: 56px; position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+.navbar-right { display: flex; align-items: center; gap: 16px; }
+.navbar-bell { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: #888; cursor: pointer; border-radius: 50%; }
+.navbar-help { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #888; letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; }
+.help-circle { width: 34px; height: 34px; background: #b0c4de; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; font-weight: 700; }
+.nav-menu { background: #fff; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: center; padding: 0 32px; }
+.nav-item { display: flex; align-items: center; gap: 8px; padding: 14px 22px; font-size: 13.5px; font-weight: 500; color: #666; cursor: pointer; border-bottom: 3px solid transparent; text-decoration: none; white-space: nowrap; }
+.nav-item.active { color: #1abc9c; border-bottom-color: #1abc9c; font-weight: 600; }
+.page-content { max-width: 1320px; margin: 0 auto; padding: 28px 24px; }
+.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.page-title { font-size: 22px; font-weight: 600; color: #2c2c2c; }
+.back-btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid #ddd; border-radius: 4px; background: #fff; font-size: 13px; font-weight: 500; color: #555; cursor: pointer; text-decoration: none; }
+.back-btn:hover { background: #f5f5f5; }
+.layout { display: flex; gap: 20px; align-items: flex-start; }
+
+/* Lateral */
+.aviso-lateral { width: 220px; flex-shrink: 0; }
+.aviso-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 18px 16px; border-left: 4px solid #1abc9c; }
+.aviso-icon { width: 36px; height: 36px; background: #e6f9f5; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; color: #1abc9c; }
+.aviso-title { font-size: 12px; font-weight: 700; color: #1abc9c; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.aviso-text { font-size: 13px; color: #555; line-height: 1.5; }
+.aviso-countdown { margin-top: 14px; padding-top: 12px; border-top: 1px solid #eee; }
+.countdown-label { font-size: 11px; color: #aaa; margin-bottom: 6px; }
+.countdown-bar-wrapper { background: #eee; border-radius: 4px; height: 6px; overflow: hidden; }
+.countdown-bar { height: 6px; background: linear-gradient(90deg, #1abc9c, #16a085); border-radius: 4px; width: 100%; transition: width 1s linear; }
+.countdown-num { font-size: 12px; color: #888; text-align: right; margin-top: 4px; font-weight: 600; }
+
+/* Main card */
+.main-card { flex: 1; background: #fff; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; }
+.card-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid #eee; background: #fafafa; }
+.card-header-left { display: flex; align-items: center; gap: 10px; }
+.card-title { font-size: 14px; font-weight: 600; color: #333; }
+.status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; font-size: 12.5px; font-weight: 600; }
+.status-pill.emitindo { background: #fff8e6; color: #b7800a; border: 1px solid #ffe0a0; }
+.status-pill.concluido { background: #e8f9f5; color: #1a8c6e; border: 1px solid #b2e4d8; display: none; }
+.pill-dot { width: 8px; height: 8px; border-radius: 50%; }
+.pill-dot.amarelo { background: #f0a500; animation: blink 1.2s infinite; }
+.pill-dot.verde { background: #1abc9c; }
+@keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
+
+/* Banner geral */
+.banner { display: none; align-items: center; gap: 12px; border-radius: 6px; padding: 13px 18px; margin: 14px 18px 0; }
+.banner.show { display: flex; animation: fadeSlide 0.4s ease; }
+.banner.sucesso { background: #fff8e6; border: 1px solid #ffe0a0; }
+.banner-text { font-size: 13.5px; font-weight: 600; color: #8a6000; }
+@keyframes fadeSlide { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+
+/* Table */
+table { width: 100%; border-collapse: collapse; }
+thead tr { background: #fafafa; border-bottom: 2px solid #eee; }
+th { padding: 11px 14px; text-align: left; font-size: 13px; font-weight: 600; color: #555; white-space: nowrap; }
+td { padding: 12px 14px; font-size: 13px; color: #555; border-bottom: 1px solid #f2f2f2; white-space: nowrap; vertical-align: middle; }
+tbody tr.data-row:last-of-type td { border-bottom: none; }
+tbody tr:hover { background: #fafcff; }
+input[type="checkbox"] { width: 15px; height: 15px; accent-color: #8b2fc5; cursor: pointer; }
+
+.icon-emitindo svg { animation: spin 1.6s linear infinite; }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+.tag-emitida { background: #e8f9f5; color: #1a8c6e; border: 1px solid #b2e4d8; border-radius: 12px; padding: 3px 10px; font-size: 12px; font-weight: 600; display:inline-flex;align-items:center;gap:6px; }
+.tag-negada { background: #fff0f0; color: #c0392b; border: 1px solid #f5c6c6; border-radius: 12px; padding: 3px 10px; font-size: 12px; font-weight: 600; display:inline-flex;align-items:center;gap:5px; }
+
+/* Inline error row */
+.erro-inline-row td { background: #fff8f8; border-bottom: 1px solid #f5c6c6 !important; padding: 10px 14px 12px 46px; }
+.erro-inline-content { display: flex; flex-direction: column; gap: 3px; }
+.erro-inline-title { font-size: 12.5px; font-weight: 700; color: #c0392b; display: flex; align-items: center; gap: 6px; }
+.erro-inline-desc { font-size: 12.5px; color: #666; }
+.erro-inline-link { color: #1abc9c; font-weight: 600; cursor: pointer; text-decoration: underline; font-size: 12.5px; }
+
+.table-footer { display: flex; align-items: center; gap: 20px; padding: 12px 18px; background: #fafafa; border-top: 2px solid #eee; font-size: 12.5px; color: #666; }
+.footer-item { display: flex; align-items: center; gap: 6px; }
+.footer-value { font-weight: 700; color: #222; font-size: 14px; }
+@keyframes rowUpdate { 0%{background:#e8f9f5} 100%{background:transparent} }
+.row-updated { animation: rowUpdate 1.5s ease; }
+
+/* Modal detalhe erro */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; z-index:1000; }
+.modal-overlay.active { display:flex; }
+.modal-box { background:#fff; border-radius:10px; width:min(580px,94vw); max-height:90vh; overflow-y:auto; box-shadow:0 12px 40px rgba(0,0,0,.2); }
+.modal-header { display:flex; align-items:center; justify-content:space-between; padding:18px 22px 14px; border-bottom:1px solid #eee; gap:12px; }
+.modal-header-title { font-size:15px; font-weight:700; color:#c0392b; display:flex; align-items:center; gap:8px; }
+.modal-close { background:none; border:none; font-size:20px; color:#aaa; cursor:pointer; line-height:1; }
+.modal-close:hover { color:#555; }
+.modal-body { padding:20px 22px 22px; }
+.error-code-badge { display:inline-flex; align-items:center; gap:6px; background:#fef2f2; border:1px solid #f5c6c6; border-radius:4px; padding:5px 12px; font-size:11.5px; font-weight:700; color:#c0392b; text-transform:uppercase; letter-spacing:.5px; margin-bottom:14px; }
+.modal-error-title { font-size:17px; font-weight:700; color:#222; margin-bottom:16px; line-height:1.4; }
+.modal-section-label { font-size:12px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; margin-top:18px; }
+.modal-text { font-size:13.5px; color:#444; line-height:1.65; }
+.prefeitura-msg { background:#fef2f2; border:1px solid #f5c6c6; border-left:4px solid #e74c3c; border-radius:4px; padding:11px 14px; margin:10px 0; font-size:13px; font-family:monospace; color:#c0392b; line-height:1.5; }
+.causas-list { list-style:none; display:flex; flex-direction:column; gap:7px; margin-top:4px; }
+.causas-list li { display:flex; align-items:flex-start; gap:8px; font-size:13.5px; color:#444; line-height:1.5; }
+.causas-list li::before { content:"•"; color:#e74c3c; font-size:16px; line-height:1.2; flex-shrink:0; }
+.modal-footer-bar { display:flex; align-items:center; justify-content:space-between; border-top:1px solid #eee; padding:14px 22px; margin-top:4px; }
+.modal-footer-link { color:#1abc9c; font-size:13px; font-weight:600; text-decoration:none; display:flex; align-items:center; gap:5px; }
+.modal-footer-link:hover { text-decoration:underline; }
+.util-label { font-size:12.5px; color:#aaa; }
+
+.toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(80px); background:#222; color:#fff; padding:14px 28px; border-radius:8px; font-size:14px; font-weight:500; z-index:9999; opacity:0; transition:all .35s ease; pointer-events:none; white-space:nowrap; }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="navbar-logo">
+    <img src="uploads/logo-eNotas-Sem-Fundo__1_-removebg-preview.png" alt="eNotas" style="height:32px;object-fit:contain;">
+  </div>
+  <div class="navbar-right">
+    <div class="navbar-bell"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+    <div class="navbar-help"><span>AJUDA</span><div class="help-circle">?</div></div>
+  </div>
+</div>
+
+<nav class="nav-menu">
+  <a class="nav-item" href="index.html"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Dashboard</a>
+  <a class="nav-item active" href="index.html"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Vendas</a>
+  <a class="nav-item" href="#"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>Gerenciar</a>
+  <a class="nav-item" href="#"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Empresa</a>
+  <a class="nav-item" href="#"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>Backoffice</a>
+</nav>
+
+<div class="page-content">
+  <div class="page-header">
+    <h1 class="page-title">Acompanhamento de Emissões</h1>
+    <a class="back-btn" href="index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Voltar para Vendas</a>
+  </div>
+
+  <div class="layout">
+    <div class="aviso-lateral">
+      <div class="aviso-card">
+        <div class="aviso-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div class="aviso-title">Atualização automática</div>
+        <div class="aviso-text">Atualização feita a cada <strong>1 minuto</strong> automaticamente.</div>
+        <div class="aviso-countdown">
+          <div class="countdown-label">Próxima atualização em:</div>
+          <div class="countdown-bar-wrapper"><div class="countdown-bar" id="countdownBar"></div></div>
+          <div class="countdown-num" id="countdownNum">15s</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-card">
+      <div class="card-header">
+        <div class="card-header-left">
+          <div class="card-title">Emissões em Tempo Real</div>
+          <div class="status-pill emitindo" id="pillEmitindo"><div class="pill-dot amarelo"></div>Processando notas...</div>
+          <div class="status-pill concluido" id="pillConcluido"><div class="pill-dot verde"></div>Processamento concluído</div>
+        </div>
+        <div style="font-size:12px;color:#aaa;" id="ultimaAtualizacao">Última atualização: agora</div>
+      </div>
+
+      <!-- Banner resultado -->
+      <div class="banner sucesso" id="bannerResultado">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a6000" stroke-width="2.5" style="flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span class="banner-text" id="bannerResultadoMsg"></span>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40px;"><input type="checkbox" id="selectAll"></th>
+            <th>Data</th><th>Produto</th><th>Cliente</th><th>Valor</th>
+            <th>Notas Fiscais</th><th>Venda</th><th style="width:40px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tabelaEmissao">
+          <tr><td colspan="8" style="padding:48px;text-align:center;color:#aaa;font-size:14px;">Carregando emissões...</td></tr>
+        </tbody>
+      </table>
+
+      <div class="table-footer" id="tableFooter" style="display:none;">
+        <div class="footer-item"><span>⏳</span><span id="footerQtd">—</span></div>
+        <div class="footer-item"><span>=</span><span class="footer-value" id="footerValor">—</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL DETALHE DO ERRO ══ -->
+<div class="modal-overlay" id="modalErroDetalhe">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-header-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c0392b" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Detalhe do erro de emissão
+      </div>
+      <button class="modal-close" onclick="fecharModalErro()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="error-code-badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        NFS-E · CÓDIGO E160
+      </div>
+
+      <div class="modal-error-title">Rejeição ao emitir NFS-e — Código E160: Arquivo em desacordo com o XML Schema</div>
+
+      <div class="modal-section-label">O que significa este erro?</div>
+      <p class="modal-text">O código <strong>E160</strong> indica que o arquivo XML enviado para a prefeitura está fora do padrão esperado pelo <strong>XML Schema</strong> do município. Isso ocorre quando há campos obrigatórios ausentes, tipos de dados incorretos ou formatação inválida no documento fiscal.</p>
+
+      <div class="modal-section-label">Mensagem retornada pela prefeitura</div>
+      <div class="prefeitura-msg">E160 – Arquivo em desacordo com o XML Schema. Verifique os campos obrigatórios e os tipos de dados informados.</div>
+
+      <div class="modal-section-label">Possíveis causas</div>
+      <ul class="causas-list">
+        <li>Campo obrigatório não preenchido (ex.: CNPJ do prestador, código do serviço LC116)</li>
+        <li>Formato de data ou valor numérico incorreto</li>
+        <li>Caracteres especiais não escapados no XML (&amp;, &lt;, &gt;)</li>
+        <li>Versão do schema desatualizada para o município</li>
+        <li>Tag XML duplicada ou fora da hierarquia esperada</li>
+      </ul>
+
+      <div class="modal-section-label">Como resolver</div>
+      <p class="modal-text">Verifique as configurações da empresa, especialmente o <strong>código do serviço (CNAE / LC 116)</strong> e os dados do prestador e tomador. Se o problema persistir, acesse o artigo completo na Central de Ajuda ou entre em contato com o suporte informando o número da venda e a mensagem de erro.</p>
+    </div>
+    <div class="modal-footer-bar">
+      <a class="modal-footer-link" href="https://atendimento.enotas.com.br/hc/pt-br/articles/35774090022797-Rejei%C3%A7%C3%A3o-ao-emitir-NFS-e-C%C3%B3digo-E160-Descri%C3%A7%C3%A3o-Arquivo-em-desacordo-com-o-XML-Schema" target="_blank">
+        Ver artigo completo na Central de Ajuda →
+      </a>
+      <span class="util-label">Este artigo foi útil?</span>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let vendas = [];
+try {
+  const raw = localStorage.getItem('vendasEmissao');
+  if (raw) vendas = JSON.parse(raw);
+} catch(e) {}
+
+const tbody = document.getElementById('tabelaEmissao');
+
+function iconeEmitindo() {
+  return `<span class="icon-emitindo" title="Em emissão...">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f0a500" stroke-width="2.5">
+      <polyline points="23 4 23 10 17 10"/>
+      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+    </svg>
+  </span>`;
+}
+
+function iconeEmitida(i) {
+  return `<span style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;color:#1abc9c;" onclick="baixarNota(${i})" title="Baixar nota fiscal">
+    <span style="font-size:20px;">🖨️</span>
+    <span class="tag-emitida">emitida</span>
+  </span>`;
+}
+
+function iconeNegada() {
+  return `<span class="tag-negada">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+    negada
+  </span>`;
+}
+
+// Última venda recebe erro se há 2+ vendas
+function isErro(i) { return vendas.length >= 2 && i === vendas.length - 1; }
+
+function renderRows(fase) {
+  if (vendas.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" style="padding:48px;text-align:center;color:#aaa;font-size:14px;line-height:1.8;">
+      Nenhuma venda em emissão encontrada.<br>
+      Volte ao painel de Vendas, selecione as vendas e clique em <strong>Gerar nota fiscal</strong>.
+    </td></tr>`;
+    document.getElementById('tableFooter').style.display = 'none';
+    return;
+  }
+
+  tbody.innerHTML = '';
+  vendas.forEach((v, i) => {
+    const erro = fase === 'concluido' && isErro(i);
+
+    // Data row
+    const tr = document.createElement('tr');
+    tr.className = 'data-row' + (fase === 'concluido' && !erro ? ' row-updated' : '');
+    if (erro) tr.style.background = '#fff8f8';
+    tr.innerHTML = `
+      <td><input type="checkbox" class="row-cb"></td>
+      <td>${v.data}</td>
+      <td>${v.produto}</td>
+      <td>${v.cliente}</td>
+      <td>${v.valor}</td>
+      <td>${fase === 'emitindo' ? iconeEmitindo() : (erro ? iconeNegada() : iconeEmitida(i))}</td>
+      <td>${v.venda}</td>
+      <td><button style="color:#aaa;background:none;border:none;cursor:pointer;font-size:16px;padding:4px 8px;" onclick="${erro ? 'toggleErroInline(this)' : ''}">&#8964;</button></td>`;
+    tbody.appendChild(tr);
+
+    // Inline error row (initially hidden, shown by chevron or auto)
+    if (erro) {
+      const errTr = document.createElement('tr');
+      errTr.className = 'erro-inline-row';
+      errTr.id = 'erroRow-' + i;
+      errTr.style.display = 'none';
+      errTr.innerHTML = `<td colspan="8">
+        <div class="erro-inline-content">
+          <div class="erro-inline-title">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c0392b" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Erro na emissão da nota fiscal
+          </div>
+          <div class="erro-inline-desc">Ocorreu um erro inesperado.</div>
+          <div class="erro-inline-desc">Correção: As possíveis causas são formatações XML incorretas.</div>
+          <div class="erro-inline-desc">Para mais detalhes sobre como corrigir este erro, <span class="erro-inline-link" onclick="abrirModalErro()">clique aqui</span>.</div>
+        </div>
+      </td>`;
+      tbody.appendChild(errTr);
+    }
+  });
+
+  // Footer
+  const footer = document.getElementById('tableFooter');
+  footer.style.display = 'flex';
+  document.getElementById('footerQtd').textContent = vendas.length + ' venda(s)';
+  let total = 0;
+  vendas.forEach(v => {
+    const n = parseFloat(v.valor.replace('R$','').replace(',','.').trim());
+    if (!isNaN(n)) total += n;
+  });
+  document.getElementById('footerValor').textContent = 'R$ ' + total.toFixed(2).replace('.',',');
+}
+
+function toggleErroInline(btn) {
+  // Find the erro row sibling
+  const row = btn.closest('tr');
+  const next = row.nextElementSibling;
+  if (next && next.id && next.id.startsWith('erroRow-')) {
+    next.style.display = next.style.display === 'none' ? '' : 'none';
+    btn.style.transform = next.style.display === '' ? 'rotate(180deg)' : '';
+  }
+}
+
+renderRows('emitindo');
+
+// ── COUNTDOWN 15s ──
+const TOTAL = 15;
+let segundos = TOTAL;
+let concluido = false;
+const bar = document.getElementById('countdownBar');
+const num = document.getElementById('countdownNum');
+
+const timer = setInterval(() => {
+  if (concluido) return;
+  segundos--;
+  bar.style.width = (segundos / TOTAL * 100) + '%';
+  num.textContent = segundos + 's';
+  if (segundos <= 0) { concluido = true; clearInterval(timer); executarConclusao(); }
+}, 1000);
+
+function executarConclusao() {
+  const agora = new Date();
+  document.getElementById('ultimaAtualizacao').textContent =
+    'Última atualização: ' + agora.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+
+  const totalErros = vendas.length >= 2 ? 1 : 0;
+  const totalOk = vendas.length - totalErros;
+
+  setTimeout(() => {
+    renderRows('concluido');
+
+    // Auto-expand inline error
+    if (totalErros > 0) {
+      const erroRow = document.getElementById('erroRow-' + (vendas.length - 1));
+      if (erroRow) erroRow.style.display = '';
+    }
+
+    // Pill
+    document.getElementById('pillEmitindo').style.display = 'none';
+    document.getElementById('pillConcluido').style.display = 'inline-flex';
+
+    // Barra
+    bar.style.width = '100%';
+    bar.style.background = totalErros > 0 ? '#e74c3c' : '#1abc9c';
+    num.textContent = '✓';
+    document.querySelector('.countdown-label').textContent = 'Concluído:';
+
+    // Banner
+    const bannerMsg = totalErros > 0
+      ? `${totalOk} nota(s) emitida(s) com sucesso! ${totalErros} nota negada.`
+      : `${totalOk} nota(s) emitida(s) com sucesso! Clique no ícone 🖨️ para baixar.`;
+    document.getElementById('bannerResultadoMsg').textContent = bannerMsg;
+    document.getElementById('bannerResultado').classList.add('show');
+
+    if (totalErros > 0) {
+      showToast('⚠️ 1 nota negada — veja o erro na tabela.');
+    } else {
+      showToast('✅ ' + totalOk + ' nota(s) emitida(s) com sucesso!');
+    }
+
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage('emissao-concluida', '*');
+    }
+    localStorage.removeItem('vendasEmissao');
+  }, 400);
+}
+
+function abrirModalErro() {
+  document.getElementById('modalErroDetalhe').classList.add('active');
+}
+function fecharModalErro() {
+  document.getElementById('modalErroDetalhe').classList.remove('active');
+}
+
+function baixarNota(i) {
+  const v = vendas[i];
+  showToast('📄 Baixando nota de ' + (v ? v.produto : '#' + (i+1)) + '...');
+}
+
+document.getElementById('selectAll').addEventListener('change', e => {
+  document.querySelectorAll('.row-cb').forEach(cb => cb.checked = e.target.checked);
+});
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>
